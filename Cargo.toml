@@ -1,0 +1,15 @@
+[package]
+name = "balloon"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pulldown-cmark = "*"
+hotwatch= "*"
+tokio = { version = "*", features = ["full"] }
+anyhow = "1"
+walkdir = "2"
+axum = "*"
+tower-http = { version = "*", features = ["fs"] }
