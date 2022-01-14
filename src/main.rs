@@ -1,13 +1,57 @@
 use axum::{http::StatusCode, service, Router};
+use clap::{arg, App, AppSettings};
 use std::{convert::Infallible, fs, net::SocketAddr, path::Path, thread, time::Duration};
 use tower_http::services::ServeDir;
 
 mod templates;
+
 const CONTENT_DIR: &str = "content";
 const PUBLIC_DIR: &str = "public";
 
+fn main() {
+    let app = App::new("balloon")
+        .bin_name("balloon")
+        .setting(AppSettings::SubcommandRequired)
+        .subcommand(
+            App::new("new")
+                .about("Create a new project")
+                .arg(arg!(<NAME> "Name of the project"))
+                .setting(AppSettings::ArgRequiredElseHelp),
+        )
+        .subcommand(
+            App::new("serve")
+                .about("Start the server")
+                .arg(arg!(<PORT> "Port to run server").default_value("8080")),
+        );
+
+    let matches = app.get_matches();
+    match matches.subcommand() {
+        Some(("serve", sub_matches)) => {
+            println!(
+                "Starting server on port {}",
+                sub_matches.value_of("PORT").expect("no port specified")
+            );
+            start(
+                sub_matches
+                    .value_of("PORT")
+                    .unwrap()
+                    .parse::<u16>()
+                    .unwrap(),
+            )
+            .unwrap();
+        }
+        Some(("new", sub_matches)) => {
+            println!(
+                "Creating new project: {}",
+                sub_matches.value_of("NAME").expect("project name needed")
+            );
+        }
+        _ => (),
+    }
+}
+
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+pub async fn start(port: u16) -> Result<(), anyhow::Error> {
     rebuild_site(CONTENT_DIR, PUBLIC_DIR).expect("Rebuilding site");
 
     tokio::task::spawn_blocking(move || {
@@ -34,7 +78,8 @@ async fn main() -> Result<(), anyhow::Error> {
         }),
     );
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8080)); // TODO: give option to change port
+    let mut addr = SocketAddr::from(([127, 0, 0, 1], 8080));
+    addr.set_port(port);
     println!("serving site on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -43,7 +88,7 @@ async fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::Error> {
+pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::Error> {
     let _ = fs::remove_dir_all(output_dir);
 
     let markdown_files: Vec<String> = walkdir::WalkDir::new(content_dir)
