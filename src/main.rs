@@ -3,14 +3,16 @@ use clap::{arg, App, AppSettings};
 use std::{convert::Infallible, fs, net::SocketAddr, path::Path, thread, time::Duration};
 use tower_http::services::ServeDir;
 
+mod new;
 mod templates;
 
 const CONTENT_DIR: &str = "content";
 const PUBLIC_DIR: &str = "public";
 
 fn main() {
-    let app = App::new("balloon")
-        .bin_name("balloon")
+    let app = App::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .about(env!("CARGO_PKG_DESCRIPTION"))
         .setting(AppSettings::SubcommandRequired)
         .subcommand(
             App::new("new")
@@ -27,10 +29,6 @@ fn main() {
     let matches = app.get_matches();
     match matches.subcommand() {
         Some(("serve", sub_matches)) => {
-            println!(
-                "Starting server on port {}",
-                sub_matches.value_of("PORT").expect("no port specified")
-            );
             start(
                 sub_matches
                     .value_of("PORT")
@@ -40,12 +38,7 @@ fn main() {
             )
             .unwrap();
         }
-        Some(("new", sub_matches)) => {
-            println!(
-                "Creating new project: {}",
-                sub_matches.value_of("NAME").expect("project name needed")
-            );
-        }
+        Some(("new", sub_matches)) => new::create(sub_matches.value_of("NAME").unwrap()),
         _ => (),
     }
 }
@@ -80,7 +73,7 @@ pub async fn start(port: u16) -> Result<(), anyhow::Error> {
 
     let mut addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     addr.set_port(port);
-    println!("serving site on {}", addr);
+    println!("serving site on http://{}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await?;
