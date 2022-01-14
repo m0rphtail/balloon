@@ -4,7 +4,7 @@ use std::{convert::Infallible, fs, net::SocketAddr, path::Path, thread, time::Du
 use tower_http::services::ServeDir;
 
 mod new;
-mod templates;
+mod template;
 
 const CONTENT_DIR: &str = "content";
 const PUBLIC_DIR: &str = "public";
@@ -93,15 +93,15 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::E
     let mut html_files = Vec::with_capacity(markdown_files.len());
 
     for file in &markdown_files {
-        let mut html = templates::HEADER.to_owned();
+        let mut html = template::HEADER.to_owned();
         let markdown = fs::read_to_string(&file)?;
         let parser = pulldown_cmark::Parser::new_ext(&markdown, pulldown_cmark::Options::all()); //TODO: use a custom parser
 
         let mut body = String::new();
         pulldown_cmark::html::push_html(&mut body, parser);
 
-        html.push_str(templates::render_body(&body).as_str());
-        html.push_str(templates::FOOTER);
+        html.push_str(template::render_body(&body).as_str());
+        html.push_str(template::FOOTER);
 
         let html_file = file
             .replace(content_dir, output_dir)
@@ -118,7 +118,7 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::E
 }
 
 fn write_index(files: Vec<String>, output_dir: &str) -> Result<(), anyhow::Error> {
-    let mut html = templates::HEADER.to_owned();
+    let mut html = template::HEADER.to_owned();
     let body = files
         .into_iter()
         .map(|file| {
@@ -129,8 +129,8 @@ fn write_index(files: Vec<String>, output_dir: &str) -> Result<(), anyhow::Error
         .collect::<Vec<String>>()
         .join("<br />\n");
 
-    html.push_str(templates::render_body(&body).as_str());
-    html.push_str(templates::FOOTER);
+    html.push_str(template::render_body(&body).as_str());
+    html.push_str(template::FOOTER);
 
     let index_path = Path::new(&output_dir).join("index.html");
     fs::write(index_path, html)?;
