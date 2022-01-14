@@ -57,7 +57,7 @@ fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::Error
     for file in &markdown_files {
         let mut html = templates::HEADER.to_owned();
         let markdown = fs::read_to_string(&file)?;
-        let parser = pulldown_cmark::Parser::new_ext(&markdown, pulldown_cmark::Options::all());
+        let parser = pulldown_cmark::Parser::new_ext(&markdown, pulldown_cmark::Options::all()); //TODO: use a custom parser
 
         let mut body = String::new();
         pulldown_cmark::html::push_html(&mut body, parser);
