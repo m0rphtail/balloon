@@ -28,7 +28,6 @@ pub fn render_body(body: &str) -> String {
               </nav>             
               <article>
                 {}      
-                <article>hello</article>
                 </article>
                 </main>
         </body>"#,
